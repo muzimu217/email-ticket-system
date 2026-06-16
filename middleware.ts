@@ -11,16 +11,22 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // API 路由检查 Authorization header（简化版，Phase1暂不做完整验证）
+  // API 路由暂不做认证检查
   if (pathname.startsWith('/api/')) {
-    // API routes for now rely on the frontend having session cookies
-    // In Phase2 we can add proper API token auth
     return NextResponse.next();
   }
 
-  // 页面路由检查 cookie 中的 session
-  const supabaseToken = request.cookies.get('sb-access-token')?.value;
-  if (!supabaseToken) {
+  // 页面路由检查 Supabase session cookie
+  // Supabase SSR 使用项目特定的 cookie 名称: sb-<project-ref>-auth-token
+  const supabaseProjectRef = 'sdwkolculkrwbfmgmvht';
+  const authCookie = request.cookies.get(`sb-${supabaseProjectRef}-auth-token`)?.value;
+
+  // 也检查可能的备用 cookie 名称
+  const hasSession = authCookie ||
+    request.cookies.get('sb-access-token')?.value ||
+    request.cookies.get('supabase-auth-token')?.value;
+
+  if (!hasSession) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
