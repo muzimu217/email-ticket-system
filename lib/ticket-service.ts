@@ -4,7 +4,10 @@ import { generateTicketToken, buildReplyToAddress, parseTicketToken } from './th
 import { sendTeamNotification } from './brevo';
 import type { Ticket, Message, MoeMailWebhookPayload } from './types';
 
-const supabase = createServiceClient();
+// Lazy initialization to avoid build-time errors
+function getSupabase() {
+  return createServiceClient();
+}
 
 /**
  * 处理入站邮件：创建新工单或追加消息到已有工单
@@ -21,6 +24,8 @@ export async function handleInboundEmail(payload: MoeMailWebhookPayload): Promis
 
   let ticket: Ticket;
   let isNew = false;
+
+  const supabase = getSupabase();
 
   if (ticketToken) {
     // 2a. 有 token → 查找已有工单
@@ -85,6 +90,7 @@ export async function handleInboundEmail(payload: MoeMailWebhookPayload): Promis
  * 创建新工单
  */
 async function createTicket(fromEmail: string, subject: string): Promise<Ticket> {
+  const supabase = getSupabase();
   const ticketToken = generateTicketToken();
 
   const { data: ticket } = await supabase
@@ -111,6 +117,7 @@ async function notifyTeam(
   subject: string,
   preview: string
 ): Promise<void> {
+  const supabase = getSupabase();
   const { data: members } = await supabase
     .from('team_members')
     .select('email')
@@ -140,6 +147,7 @@ export async function getTickets(options?: {
   limit?: number;
   offset?: number;
 }): Promise<Ticket[]> {
+  const supabase = getSupabase();
   let query = supabase
     .from('tickets')
     .select('*')
@@ -166,6 +174,7 @@ export async function getTicketWithMessages(ticketId: string): Promise<{
   ticket: Ticket;
   messages: Message[];
 } | null> {
+  const supabase = getSupabase();
   const { data: ticket } = await supabase
     .from('tickets')
     .select('*')
@@ -190,6 +199,7 @@ export async function updateTicketStatus(
   ticketId: string,
   status: string
 ): Promise<Ticket | null> {
+  const supabase = getSupabase();
   const updates: Record<string, unknown> = { status };
 
   if (status === 'resolved') {
