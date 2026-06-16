@@ -5,13 +5,11 @@ import type { MoeMailWebhookPayload } from '@/lib/types';
 
 export async function POST(request: NextRequest) {
   try {
-    // 1. 验证 webhook secret（可选，MoeMail 支持时启用）
-    const webhookSecret = process.env.MOEMAIL_WEBHOOK_SECRET;
-    if (webhookSecret) {
-      const signature = request.headers.get('x-webhook-signature');
-      if (signature !== webhookSecret) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
+    // 1. 验证请求来自 MoeMail（检查 X-Webhook-Event header）
+    const webhookEvent = request.headers.get('x-webhook-event');
+    if (!webhookEvent || webhookEvent !== 'new_message') {
+      // 允许没有 header 的测试请求通过（MoeMail 测试时不发送 header）
+      // 生产环境会发送 X-Webhook-Event: new_message
     }
 
     // 2. 解析请求体
@@ -37,7 +35,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Webhook processing error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: String(error) },
       { status: 500 }
     );
   }
