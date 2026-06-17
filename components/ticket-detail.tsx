@@ -1,10 +1,12 @@
-// components/ticket-detail.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import { StatusBadge } from './status-badge';
 import { ReplyForm } from './reply-form';
-import type { Ticket, Message } from '@/lib/types';
+import { AssignButton } from './assign-button';
+import { TicketNotes } from './ticket-notes';
+import type { Ticket, Message, TeamMember } from '@/lib/types';
 
 interface TicketDetailProps {
   ticketId: string;
@@ -13,11 +15,29 @@ interface TicketDetailProps {
 export function TicketDetail({ ticketId }: TicketDetailProps) {
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [currentMemberId, setCurrentMemberId] = useState('');
+  const [currentMemberName, setCurrentMemberName] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchTicket();
+    fetchTeamMembers();
+    fetchCurrentUser();
   }, [ticketId]);
+
+  async function fetchCurrentUser() {
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setCurrentMemberId(user.id);
+        setCurrentMemberName(user.email || '');
+      }
+    } catch (e) {
+      // ignore auth errors
+    }
+  }
 
   async function fetchTicket() {
     setLoading(true);
@@ -30,11 +50,19 @@ export function TicketDetail({ ticketId }: TicketDetailProps) {
     setLoading(false);
   }
 
+  async function fetchTeamMembers() {
+    const res = await fetch('/api/team');
+    if (res.ok) {
+      const data = await res.json();
+      setTeamMembers(data.members || []);
+    }
+  }
+
   async function handleStatusChange(status: string) {
     await fetch(`/api/tickets/${ticketId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status, changedBy: currentMemberId }),
     });
     fetchTicket();
   }
@@ -55,6 +83,20 @@ export function TicketDetail({ ticketId }: TicketDetailProps) {
           <p>创建时间: {new Date(ticket.created_at).toLocaleString('zh-CN')}</p>
           <p>最后消息: {ticket.last_message_at ? new Date(ticket.last_message_at).toLocaleString('zh-CN') : '-'}</p>
         </div>
+
+        {/* 认领/分配区域 */}
+        <div className="mt-4 pt-4 border-t border-gray-100 relative">
+          <AssignButton
+            ticketId={ticketId}
+            assignedTo={ticket.assigned_to}
+            assignedToName={null}
+            currentMemberId={currentMemberId}
+            currentMemberName={currentMemberName}
+            teamMembers={teamMembers}
+            onChanged={fetchTicket}
+          />
+        </div>
+
         {/* 状态操作按钮 */}
         <div className="flex gap-2 mt-4">
           {ticket.status !== 'processing' && (
@@ -111,6 +153,11 @@ export function TicketDetail({ ticketId }: TicketDetailProps) {
             />
           </div>
         ))}
+      </div>
+
+      {/* 内部备注 */}
+      <div className="bg-white shadow-sm rounded-lg p-6 mb-6">
+        <TicketNotes ticketId={ticketId} authorId={currentMemberId} />
       </div>
 
       {/* 回复表单 */}
