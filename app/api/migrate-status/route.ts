@@ -2,30 +2,35 @@
 // app/api/migrate-status/route.ts
 // TEMPORARY: Migrate ticket statuses from 5-state to 3-state. Delete after use.
 import { NextResponse } from 'next/server';
-import { Pool } from 'pg';
+import { createServiceClient } from '@/lib/supabase/server';
 
 export async function POST() {
-  const pool = new Pool({
-    connectionString: 'postgresql://postgres:64378561huaW@db.sdwkolculkrwbfmgmvht.supabase.co:5432/postgres',
-    ssl: { rejectUnauthorized: false },
-  });
+  const supabase = createServiceClient();
+  const results = [];
 
-  try {
-    // 1. Update existing data
-    await pool.query("UPDATE tickets SET status = 'pending' WHERE status = 'new'");
-    await pool.query("UPDATE tickets SET status = 'resolved' WHERE status = 'closed'");
+  // 1. Migrate 'new' → 'pending'
+  const { error: e1 } = await supabase
+    .from('tickets')
+    .update({ status: 'pending' })
+    .eq('status', 'new');
+  results.push(`new→pending: ${e1 ? 'ERROR ' + e1.message : 'OK'}`);
 
-    // 2. Update constraint
-    await pool.query('ALTER TABLE tickets DROP CONSTRAINT IF EXISTS tickets_status_check');
-    await pool.query("ALTER TABLE tickets ADD CONSTRAINT tickets_status_check CHECK (status IN ('pending', 'processing', 'resolved'))");
-    await pool.query("ALTER TABLE tickets ALTER COLUMN status SET DEFAULT 'pending'");
+  // 2. Migrate 'closed' → 'resolved'
+  const { error: e2 } = await supabase
+    .from('tickets')
+    .update({ status: 'resolved' })
+    .eq('status', 'closed');
+  results.push(`closed→resolved: ${e2 ? 'ERROR ' + e2.message : 'OK'}`);
 
-    // 3. Verify
-    const { rows } = await pool.query('SELECT status, COUNT(*) FROM tickets GROUP BY status');
-    return NextResponse.json({ success: true, distribution: rows });
-  } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 });
-  } finally {
-    await pool.end();
+  // 3. Verify distribution
+  const { data: dist } = await supabase
+    .from('tickets')
+    .select('status');
+  const counts = {};
+  for (const t of dist || []) {
+    counts[t.status] = (counts[t.status] || 0) + 1;
   }
+  results.push(`distribution: ${JSON.stringify(counts)}`);
+
+  return NextResponse.json({ success: true, results });
 }
