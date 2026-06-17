@@ -115,14 +115,6 @@ export function TicketDetail({ ticketId }: TicketDetailProps) {
               标记已解决
             </button>
           )}
-          {ticket.status !== 'closed' && (
-            <button
-              onClick={() => handleStatusChange('closed')}
-              className="px-3 py-1.5 text-sm bg-gray-100 text-gray-800 rounded-md hover:bg-gray-200"
-            >
-              关闭工单
-            </button>
-          )}
         </div>
       </div>
 
@@ -161,7 +153,7 @@ export function TicketDetail({ ticketId }: TicketDetailProps) {
       </div>
 
       {/* 回复表单 */}
-      {ticket.status !== 'closed' && (
+      {ticket.status !== 'resolved' && (
         <ReplyForm ticketId={ticketId} onSent={fetchTicket} />
       )}
     </div>

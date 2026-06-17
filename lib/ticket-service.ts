@@ -38,7 +38,7 @@ export async function handleInboundEmail(payload: MoeMailWebhookPayload): Promis
     if (existingTicket) {
       ticket = existingTicket;
       // 客户回复时重新打开工单
-      if (ticket.status === 'resolved' || ticket.status === 'closed') {
+      if (ticket.status === 'resolved') {
         await supabase
           .from('tickets')
           .update({ status: 'pending', last_message_at: new Date().toISOString() })
@@ -102,7 +102,7 @@ async function createTicket(fromEmail: string, subject: string): Promise<Ticket>
       ticket_token: ticketToken,
       from_email: fromEmail,
       subject: subject || '(无主题)',
-      status: 'new',
+      status: 'pending',
       last_message_at: new Date().toISOString(),
     })
     .select()
@@ -187,8 +187,6 @@ export async function updateTicketStatus(
   const updates: Record<string, unknown> = { status };
   if (status === 'resolved') {
     updates.resolved_at = new Date().toISOString();
-  } else if (status === 'closed') {
-    updates.closed_at = new Date().toISOString();
   }
 
   const { data } = await supabase

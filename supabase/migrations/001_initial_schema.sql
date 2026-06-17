@@ -6,7 +6,7 @@ CREATE TABLE tickets (
   ticket_token TEXT NOT NULL UNIQUE,  -- 用于 +地址 追踪的唯一标识
   from_email TEXT NOT NULL,           -- 客户邮箱
   subject TEXT NOT NULL,              -- 工单标题（首封邮件主题）
-  status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'pending', 'processing', 'resolved', 'closed')),
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'resolved')),
   assigned_to UUID REFERENCES auth.users(id),
   last_message_at TIMESTAMPTZ,
   resolved_at TIMESTAMPTZ,

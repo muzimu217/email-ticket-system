@@ -1,6 +1,6 @@
 // lib/types.ts
 
-export type TicketStatus = 'new' | 'pending' | 'processing' | 'resolved' | 'closed';
+export type TicketStatus = 'pending' | 'processing' | 'resolved';
 export type MessageDirection = 'inbound' | 'outbound';
 export type TeamRole = 'admin' | 'agent';
 

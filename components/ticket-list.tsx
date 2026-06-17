@@ -36,11 +36,9 @@ export function TicketList() {
           className="px-3 py-2 border border-gray-300 rounded-md text-sm"
         >
           <option value="">全部状态</option>
-          <option value="new">新建</option>
           <option value="pending">待处理</option>
           <option value="processing">处理中</option>
           <option value="resolved">已解决</option>
-          <option value="closed">已关闭</option>
         </select>
       </div>
 
@@ -75,7 +73,7 @@ export function TicketList() {
                       {ticket.from_email} · {new Date(ticket.created_at).toLocaleString('zh-CN')}
                     </p>
                   </div>
-                  {!assignee && ticket.status !== 'closed' && (
+                  {!assignee && ticket.status !== 'resolved' && (
                     <span className="text-xs text-orange-500 font-medium">待认领</span>
                   )}
                 </div>
