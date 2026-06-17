@@ -122,7 +122,10 @@ export async function getTickets(options?: {
   const supabase = getSupabase();
   let query = supabase
     .from('tickets')
-    .select('*')
+    .select(`
+      *,
+      assignee:team_members!assigned_to(name, email)
+    `)
     .order('last_message_at', { ascending: false });
 
   if (options?.status) {

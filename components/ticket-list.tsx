@@ -50,27 +50,38 @@ export function TicketList() {
         <p className="text-gray-500">暂无工单</p>
       ) : (
         <div className="bg-white shadow-sm rounded-lg divide-y">
-          {tickets.map((ticket) => (
-            <Link
-              key={ticket.id}
-              href={`/tickets/${ticket.id}`}
-              className="block px-6 py-4 hover:bg-gray-50 transition-colors"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3">
-                    <StatusBadge status={ticket.status} />
-                    <span className="text-sm font-medium text-gray-900 truncate">
-                      {ticket.subject}
-                    </span>
+          {tickets.map((ticket) => {
+            const assignee = (ticket as Ticket & { assignee?: { name: string; email: string } }).assignee;
+            return (
+              <Link
+                key={ticket.id}
+                href={`/tickets/${ticket.id}`}
+                className="block px-6 py-4 hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3">
+                      <StatusBadge status={ticket.status} />
+                      <span className="text-sm font-medium text-gray-900 truncate">
+                        {ticket.subject}
+                      </span>
+                      {assignee && (
+                        <span className="text-xs text-gray-400">
+                          {assignee.name}
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-1 text-sm text-gray-500">
+                      {ticket.from_email} · {new Date(ticket.created_at).toLocaleString('zh-CN')}
+                    </p>
                   </div>
-                  <p className="mt-1 text-sm text-gray-500">
-                    {ticket.from_email} · {new Date(ticket.created_at).toLocaleString('zh-CN')}
-                  </p>
+                  {!assignee && ticket.status !== 'closed' && (
+                    <span className="text-xs text-orange-500 font-medium">待认领</span>
+                  )}
                 </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>
