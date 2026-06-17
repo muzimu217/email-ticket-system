@@ -35,11 +35,9 @@ export async function updateNotificationSettings(settings: NotificationSettings)
   const supabase = getSupabase();
   const { error } = await supabase
     .from('system_settings')
-    .upsert({
-      key: 'notification',
-      value: settings,
-      updated_at: new Date().toISOString(),
-    });
+    .update({ value: settings, updated_at: new Date().toISOString() })
+    .eq('key', 'notification');
+  if (error) console.error('updateNotificationSettings error:', error);
   return !error;
 }
 
@@ -71,10 +69,8 @@ export async function updateAssignmentSettings(settings: AssignmentSettings): Pr
   const supabase = getSupabase();
   const { error } = await supabase
     .from('system_settings')
-    .upsert({
-      key: 'assignment',
-      value: settings,
-      updated_at: new Date().toISOString(),
-    });
+    .update({ value: settings, updated_at: new Date().toISOString() })
+    .eq('key', 'assignment');
+  if (error) console.error('updateAssignmentSettings error:', error);
   return !error;
 }

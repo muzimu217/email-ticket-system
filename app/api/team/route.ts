@@ -1,6 +1,7 @@
 // app/api/team/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllTeamMembers, updateTeamMember, createTeamMember, deleteTeamMember } from '@/lib/team-service';
+import { requireAdmin } from '@/lib/auth';
 
 export async function GET() {
   const members = await getAllTeamMembers();
@@ -8,6 +9,11 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const { isAdmin } = await requireAdmin(request);
+  if (!isAdmin) {
+    return NextResponse.json({ error: '需要管理员权限' }, { status: 403 });
+  }
+
   const body = await request.json();
   const { userId, email, name, role } = body;
 
@@ -20,6 +26,11 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
+  const { isAdmin } = await requireAdmin(request);
+  if (!isAdmin) {
+    return NextResponse.json({ error: '需要管理员权限' }, { status: 403 });
+  }
+
   const body = await request.json();
   const { memberId, updates } = body;
 
@@ -32,6 +43,11 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const { isAdmin } = await requireAdmin(request);
+  if (!isAdmin) {
+    return NextResponse.json({ error: '需要管理员权限' }, { status: 403 });
+  }
+
   const { searchParams } = new URL(request.url);
   const memberId = searchParams.get('memberId');
 

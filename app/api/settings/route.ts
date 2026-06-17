@@ -6,6 +6,7 @@ import {
   getAssignmentSettings,
   updateAssignmentSettings,
 } from '@/lib/settings-service';
+import { requireAdmin } from '@/lib/auth';
 
 export async function GET() {
   const [notification, assignment] = await Promise.all([
@@ -16,15 +17,21 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
+  const { isAdmin } = await requireAdmin(request);
+  if (!isAdmin) {
+    return NextResponse.json({ error: '需要管理员权限' }, { status: 403 });
+  }
+
   const body = await request.json();
 
+  let ok = true;
   if (body.notification) {
-    await updateNotificationSettings(body.notification);
+    ok = await updateNotificationSettings(body.notification) && ok;
   }
 
   if (body.assignment) {
-    await updateAssignmentSettings(body.assignment);
+    ok = await updateAssignmentSettings(body.assignment) && ok;
   }
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: ok });
 }
