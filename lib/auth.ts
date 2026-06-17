@@ -6,21 +6,25 @@ import type { NextRequest } from 'next/server';
  * 从请求 cookie 中提取 access token
  */
 function extractAccessToken(cookieValue: string): string {
-  // @supabase/ssr cookie 可能是 base64 编码的 JSON 或原始 JWT
+  // @supabase/ssr cookie 格式: base64-<base64编码的JSON>
+  if (cookieValue.startsWith('base64-')) {
+    try {
+      const decoded = Buffer.from(cookieValue.slice(7), 'base64').toString();
+      const parsed = JSON.parse(decoded);
+      if (parsed.access_token) return parsed.access_token;
+    } catch {
+      // 解码失败
+    }
+  }
+
+  // 直接 JSON 格式
   try {
     const parsed = JSON.parse(cookieValue);
     if (parsed.access_token) return parsed.access_token;
   } catch {
-    // 不是 JSON，尝试 base64 解码
-    try {
-      const decoded = Buffer.from(cookieValue, 'base64').toString();
-      const parsed = JSON.parse(decoded);
-      if (parsed.access_token) return parsed.access_token;
-    } catch {
-      // 原始 JWT
-      return cookieValue;
-    }
+    // 原始 JWT
   }
+
   return cookieValue;
 }
 
