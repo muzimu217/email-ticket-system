@@ -17,7 +17,7 @@ Email Ticket System 是一个完整的邮件客服解决方案，将客户邮件
 - **内部备注** - 团队成员可添加内部备注（客户不可见）
 - **角色权限控制** - admin / agent 两级权限
 - **Web 管理后台** - 工单列表、详情、回复、团队管理、系统设置
-- **状态流转** - new → pending → processing → resolved → closed（含状态历史记录）
+- **状态流转** - pending → processing → resolved（含状态历史记录）
 - **邮件统一出口** - 所有回复以官方支持邮箱名义发送
 - **Webhook 地址过滤** - 只接受发到客服邮箱的邮件，其他邮箱一律忽略
 
@@ -193,7 +193,7 @@ https://your-app.vercel.app/api/webhook/email
 | ticket_token | TEXT | +地址追踪标识 |
 | from_email | TEXT | 客户邮箱 |
 | subject | TEXT | 工单标题 |
-| status | TEXT | new/pending/processing/resolved/closed |
+| status | TEXT | pending/processing/resolved |
 | assigned_to | UUID | 分配给团队成员 |
 | last_message_at | TIMESTAMPTZ | 最后消息时间 |
 | created_at | TIMESTAMPTZ | 创建时间 |
@@ -232,10 +232,10 @@ https://your-app.vercel.app/api/webhook/email
 ## 状态流转
 
 ```
-新建 (new) → 待处理 (pending) → 处理中 (processing) → 已解决 (resolved) → 已关闭 (closed)
-                    ↑                    |                   |
-                    |____________________|                   |
-                    客户回复/重新打开                       客户回复则重新打开
+待处理 (pending) → 处理中 (processing) → 已解决 (resolved)
+      ↑                    |
+      |____________________|
+      客户回复重新打开
 ```
 
 ## 线程追踪方案
