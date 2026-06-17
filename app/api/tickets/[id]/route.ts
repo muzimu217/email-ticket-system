@@ -27,7 +27,7 @@ export async function PATCH(
     return NextResponse.json({ error: 'status is required' }, { status: 400 });
   }
 
-  const ticket = await updateTicketStatus(id, body.status);
+  const ticket = await updateTicketStatus(id, body.status, body.changedBy);
 
   if (!ticket) {
     return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });

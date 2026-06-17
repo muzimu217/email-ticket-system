@@ -2,7 +2,7 @@
 import { createServiceClient } from './supabase/server';
 import { generateTicketToken, buildReplyToAddress, parseTicketToken } from './thread-tracker';
 import { sendTeamNotification } from './brevo';
-import type { Ticket, Message, MoeMailWebhookPayload } from './types';
+import type { Ticket, Message, MoeMailWebhookPayload, TeamMember } from './types';
 
 // Lazy initialization to avoid build-time errors
 function getSupabase() {
@@ -193,15 +193,23 @@ export async function getTicketWithMessages(ticketId: string): Promise<{
 }
 
 /**
- * 更新工单状态
+ * 更新工单状态（带历史记录）
  */
 export async function updateTicketStatus(
   ticketId: string,
-  status: string
+  status: string,
+  changedBy?: string
 ): Promise<Ticket | null> {
   const supabase = getSupabase();
-  const updates: Record<string, unknown> = { status };
 
+  // 获取当前状态
+  const { data: current } = await supabase
+    .from('tickets')
+    .select('status')
+    .eq('id', ticketId)
+    .single();
+
+  const updates: Record<string, unknown> = { status };
   if (status === 'resolved') {
     updates.resolved_at = new Date().toISOString();
   } else if (status === 'closed') {
@@ -215,5 +223,83 @@ export async function updateTicketStatus(
     .select()
     .single();
 
+  // 记录状态变更历史
+  if (data && current) {
+    await supabase.from('ticket_status_history').insert({
+      ticket_id: ticketId,
+      old_status: current.status,
+      new_status: status,
+      changed_by: changedBy || null,
+    });
+  }
+
   return data;
+}
+
+/**
+ * 认领工单
+ */
+export async function claimTicket(ticketId: string, memberId: string, memberName: string): Promise<Ticket | null> {
+  const supabase = getSupabase();
+  const { data: ticket } = await supabase
+    .from('tickets')
+    .update({
+      assigned_to: memberId,
+      status: 'processing',
+      last_message_at: new Date().toISOString(),
+    })
+    .eq('id', ticketId)
+    .select()
+    .single();
+
+  if (ticket) {
+    await supabase.from('ticket_status_history').insert({
+      ticket_id: ticketId,
+      old_status: null,
+      new_status: 'processing',
+      changed_by: memberId,
+    });
+  }
+
+  return ticket;
+}
+
+/**
+ * 分配工单给指定成员
+ */
+export async function assignTicket(ticketId: string, assigneeId: string, assignerId: string): Promise<Ticket | null> {
+  const supabase = getSupabase();
+  const { data: ticket } = await supabase
+    .from('tickets')
+    .update({
+      assigned_to: assigneeId,
+      status: 'processing',
+    })
+    .eq('id', ticketId)
+    .select()
+    .single();
+
+  if (ticket) {
+    await supabase.from('ticket_status_history').insert({
+      ticket_id: ticketId,
+      old_status: null,
+      new_status: 'processing',
+      changed_by: assignerId,
+    });
+  }
+
+  return ticket;
+}
+
+/**
+ * 获取所有活跃团队成员
+ */
+export async function getActiveTeamMembers(): Promise<TeamMember[]> {
+  const supabase = getSupabase();
+  const { data } = await supabase
+    .from('team_members')
+    .select('*')
+    .eq('is_active', true)
+    .order('name');
+  return data || [];
 }
