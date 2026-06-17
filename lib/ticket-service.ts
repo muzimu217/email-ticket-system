@@ -2,7 +2,7 @@
 import { createServiceClient } from './supabase/server';
 import { generateTicketToken, buildReplyToAddress, parseTicketToken } from './thread-tracker';
 import { sendTeamNotification } from './brevo';
-import type { Ticket, Message, MoeMailWebhookPayload, TeamMember } from './types';
+import type { Ticket, Message, MoeMailWebhookPayload, TeamMember, TicketNote } from './types';
 
 // Lazy initialization to avoid build-time errors
 function getSupabase() {
@@ -302,4 +302,74 @@ export async function getActiveTeamMembers(): Promise<TeamMember[]> {
     .eq('is_active', true)
     .order('name');
   return data || [];
+}
+
+/**
+ * 获取工单的内部备注
+ */
+export async function getTicketNotes(ticketId: string): Promise<TicketNote[]> {
+  const supabase = getSupabase();
+  const { data } = await supabase
+    .from('ticket_notes')
+    .select(`
+      *,
+      author:team_members(name)
+    `)
+    .eq('ticket_id', ticketId)
+    .order('created_at', { ascending: true });
+
+  return (data || []).map((note: Record<string, unknown>) => ({
+    id: note.id as string,
+    ticket_id: note.ticket_id as string,
+    author_id: note.author_id as string,
+    author_name: (note.author as Record<string, unknown>)?.name as string,
+    content: note.content as string,
+    created_at: note.created_at as string,
+  }));
+}
+
+/**
+ * 添加内部备注
+ */
+export async function addTicketNote(
+  ticketId: string,
+  authorId: string,
+  content: string
+): Promise<TicketNote | null> {
+  const supabase = getSupabase();
+  const { data } = await supabase
+    .from('ticket_notes')
+    .insert({
+      ticket_id: ticketId,
+      author_id: authorId,
+      content,
+    })
+    .select(`
+      *,
+      author:team_members(name)
+    `)
+    .single();
+
+  if (!data) return null;
+
+  return {
+    id: data.id,
+    ticket_id: data.ticket_id,
+    author_id: data.author_id,
+    author_name: data.author?.name,
+    content: data.content,
+    created_at: data.created_at,
+  };
+}
+
+/**
+ * 删除内部备注
+ */
+export async function deleteTicketNote(noteId: string): Promise<boolean> {
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from('ticket_notes')
+    .delete()
+    .eq('id', noteId);
+  return !error;
 }
