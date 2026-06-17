@@ -31,14 +31,14 @@ export async function getNotificationSettings(): Promise<NotificationSettings> {
 /**
  * 更新通知策略设置
  */
-export async function updateNotificationSettings(settings: NotificationSettings): Promise<boolean> {
+export async function updateNotificationSettings(settings: NotificationSettings): Promise<{ success: boolean; error?: string }> {
   const supabase = getSupabase();
   const { error } = await supabase
     .from('system_settings')
     .update({ value: settings, updated_at: new Date().toISOString() })
     .eq('key', 'notification');
   if (error) console.error('updateNotificationSettings error:', error);
-  return !error;
+  return { success: !error, error: error?.message };
 }
 
 /**
@@ -65,12 +65,12 @@ export async function getAssignmentSettings(): Promise<AssignmentSettings> {
 /**
  * 更新分配策略设置
  */
-export async function updateAssignmentSettings(settings: AssignmentSettings): Promise<boolean> {
+export async function updateAssignmentSettings(settings: AssignmentSettings): Promise<{ success: boolean; error?: string }> {
   const supabase = getSupabase();
   const { error } = await supabase
     .from('system_settings')
     .update({ value: settings, updated_at: new Date().toISOString() })
     .eq('key', 'assignment');
   if (error) console.error('updateAssignmentSettings error:', error);
-  return !error;
+  return { success: !error, error: error?.message };
 }

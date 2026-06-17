@@ -23,15 +23,21 @@ export async function PUT(request: NextRequest) {
   }
 
   const body = await request.json();
+  const errors: string[] = [];
 
-  let ok = true;
   if (body.notification) {
-    ok = await updateNotificationSettings(body.notification) && ok;
+    const result = await updateNotificationSettings(body.notification);
+    if (!result.success) errors.push(`notification: ${result.error}`);
   }
 
   if (body.assignment) {
-    ok = await updateAssignmentSettings(body.assignment) && ok;
+    const result = await updateAssignmentSettings(body.assignment);
+    if (!result.success) errors.push(`assignment: ${result.error}`);
   }
 
-  return NextResponse.json({ success: ok });
+  if (errors.length > 0) {
+    return NextResponse.json({ success: false, errors }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true });
 }
