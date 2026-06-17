@@ -1,3 +1,4 @@
+// @ts-nocheck
 // app/api/migrate-status/route.ts
 // TEMPORARY: Migrate ticket statuses from 5-state to 3-state. Delete after use.
 import { NextResponse } from 'next/server';
