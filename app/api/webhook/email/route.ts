@@ -1,26 +1,30 @@
 // app/api/webhook/email/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { handleInboundEmail } from '@/lib/ticket-service';
+import { getSupportEmail, parseTicketToken } from '@/lib/thread-tracker';
 import type { MoeMailWebhookPayload } from '@/lib/types';
 
 export async function POST(request: NextRequest) {
   try {
-    // 1. 验证请求来自 MoeMail（检查 X-Webhook-Event header）
-    const webhookEvent = request.headers.get('x-webhook-event');
-    if (!webhookEvent || webhookEvent !== 'new_message') {
-      // 允许没有 header 的测试请求通过（MoeMail 测试时不发送 header）
-      // 生产环境会发送 X-Webhook-Event: new_message
-    }
-
-    // 2. 解析请求体
+    // 1. 解析请求体
     const payload: MoeMailWebhookPayload = await request.json();
 
-    // 3. 基本验证
+    // 2. 基本验证
     if (!payload.fromAddress || !payload.toAddress) {
       return NextResponse.json(
         { error: 'Missing required fields: fromAddress, toAddress' },
         { status: 400 }
       );
+    }
+
+    // 3. 过滤：只接受发到客服邮箱的邮件（含 +token 回复变体）
+    //    MoeMail 会把所有邮箱的邮件都转发到 webhook，需要排除非客服邮箱
+    const supportEmail = getSupportEmail().toLowerCase();
+    const isBaseMatch = payload.toAddress.toLowerCase() === supportEmail;
+    const isReplyMatch = parseTicketToken(payload.toAddress) !== null;
+
+    if (!isBaseMatch && !isReplyMatch) {
+      return NextResponse.json({ success: true, ignored: true });
     }
 
     // 4. 处理入站邮件
