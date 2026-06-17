@@ -21,7 +21,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'userId, email, name are required' }, { status: 400 });
   }
 
-  const member = await createTeamMember(userId, email, name, role);
+  const { data: member, error } = await createTeamMember(userId, email, name, role);
+  if (error) {
+    return NextResponse.json({ error }, { status: 400 });
+  }
   return NextResponse.json({ member });
 }
 

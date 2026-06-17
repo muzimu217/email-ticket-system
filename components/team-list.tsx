@@ -128,8 +128,7 @@ export function TeamList() {
       <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
         <h3 className="text-sm font-medium text-blue-900 mb-2">添加新成员</h3>
         <p className="text-sm text-blue-700">
-          新成员需要先在 Supabase Dashboard → Authentication → Users 中创建账号，
-          然后在下方填入用户 UUID 和信息：
+          直接填写信息即可，系统会一步创建登录账号并加入团队（无需再去 Supabase Dashboard）。
         </p>
         <AddMemberForm onAdded={fetchMembers} />
       </div>
@@ -138,60 +137,82 @@ export function TeamList() {
 }
 
 function AddMemberForm({ onAdded }: { onAdded: () => void }) {
-  const [userId, setUserId] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [role, setRole] = useState<TeamRole>('agent');
   const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSending(true);
-    const res = await fetch('/api/team', {
+    setError('');
+
+    const res = await fetch('/api/team/create-user', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, email, name, role: 'agent' }),
+      body: JSON.stringify({ email, password, name, role }),
     });
+    const data = await res.json().catch(() => ({}));
+
     if (res.ok) {
-      setUserId('');
       setEmail('');
+      setPassword('');
       setName('');
+      setRole('agent');
       onAdded();
+    } else {
+      // 明确展示后端返回的错误，不再假装成功
+      setError(data?.error || `添加失败（HTTP ${res.status}）`);
     }
     setSending(false);
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-4">
-      <input
-        type="text"
-        value={userId}
-        onChange={(e) => setUserId(e.target.value)}
-        placeholder="Supabase User UUID"
-        className="px-3 py-2 border border-gray-300 rounded text-sm"
-        required
-      />
-      <input
-        type="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        placeholder="邮箱"
-        className="px-3 py-2 border border-gray-300 rounded text-sm"
-        required
-      />
-      <input
-        type="text"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder="姓名"
-        className="px-3 py-2 border border-gray-300 rounded text-sm"
-        required
-      />
+    <form onSubmit={handleSubmit} className="mt-3 space-y-2">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-4">
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="邮箱"
+          className="px-3 py-2 border border-gray-300 rounded text-sm"
+          required
+        />
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="密码（至少 8 位）"
+          className="px-3 py-2 border border-gray-300 rounded text-sm"
+          minLength={8}
+          required
+        />
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="姓名"
+          className="px-3 py-2 border border-gray-300 rounded text-sm"
+          required
+        />
+        <select
+          value={role}
+          onChange={(e) => setRole(e.target.value as TeamRole)}
+          className="px-3 py-2 border border-gray-300 rounded text-sm"
+        >
+          <option value="agent">客服</option>
+          <option value="admin">管理员</option>
+        </select>
+      </div>
+      {error && <p className="text-sm text-red-600">{error}</p>}
       <button
         type="submit"
         disabled={sending}
-        className="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
+        className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
       >
-        {sending ? '添加中...' : '添加'}
+        {sending ? '添加中...' : '添加成员'}
       </button>
     </form>
   );

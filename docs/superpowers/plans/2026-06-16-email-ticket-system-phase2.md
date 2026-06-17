@@ -13,7 +13,7 @@
 ## 已有项目信息
 
 - **项目路径:** `/Users/blackevil/Documents/服务研究/email-ticket-system`
-- **支持邮箱:** `openopensource-club@kcos.club`
+- **支持邮箱:** `opensource-club@kcos.club`
 - **Supabase URL:** `https://sdwkolculkrwbfmgmvht.supabase.co`
 - **已有数据库表:** tickets, messages, team_members
 - **已有功能:** 邮件接收→工单创建→后台查看→回复客户→线程追踪
