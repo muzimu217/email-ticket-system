@@ -1,7 +1,7 @@
 // lib/ticket-service.ts
 import { createServiceClient } from './supabase/server';
 import { generateTicketToken, buildReplyToAddress, parseTicketToken } from './thread-tracker';
-import { sendTeamNotification } from './brevo';
+import { notifyNewTicket, notifyCustomerReply } from './notification-service';
 import type { Ticket, Message, MoeMailWebhookPayload, TeamMember, TicketNote } from './types';
 
 // Lazy initialization to avoid build-time errors
@@ -78,9 +78,12 @@ export async function handleInboundEmail(payload: MoeMailWebhookPayload): Promis
     .select()
     .single();
 
-  // 4. 新工单时通知团队
+  // 4. 通知团队
   if (isNew) {
-    await notifyTeam(ticket, fromAddress, subject, messageContent);
+    await notifyNewTicket(ticket, fromAddress, subject, messageContent);
+  } else {
+    // 客户回复，通知处理人
+    await notifyCustomerReply(ticket, fromAddress, messageContent);
   }
 
   return { ticket, message: message!, isNew };
@@ -106,37 +109,6 @@ async function createTicket(fromEmail: string, subject: string): Promise<Ticket>
     .single();
 
   return ticket!;
-}
-
-/**
- * 通知团队有新工单
- */
-async function notifyTeam(
-  ticket: Ticket,
-  fromEmail: string,
-  subject: string,
-  preview: string
-): Promise<void> {
-  const supabase = getSupabase();
-  const { data: members } = await supabase
-    .from('team_members')
-    .select('email')
-    .eq('is_active', true);
-
-  if (!members || members.length === 0) return;
-
-  const teamEmails = members.map((m) => m.email);
-  const adminUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-
-  await sendTeamNotification({
-    teamEmails,
-    ticketId: ticket.id,
-    ticketToken: ticket.ticket_token,
-    fromEmail,
-    subject,
-    preview,
-    adminUrl,
-  });
 }
 
 /**
