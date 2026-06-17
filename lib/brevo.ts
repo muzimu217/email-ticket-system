@@ -22,7 +22,7 @@ export async function sendEmail(params: SendEmailParams): Promise<BrevoResponse>
   const body: Record<string, unknown> = {
     sender: {
       name: process.env.SUPPORT_EMAIL_NAME || 'OpenSource Club Support',
-      email: process.env.SUPPORT_EMAIL || 'openopensource-club@kcos.club',
+      email: process.env.SUPPORT_EMAIL || 'opensource-club@kcos.club',
     },
     to: [{ email: to, name: toName || to }],
     subject,

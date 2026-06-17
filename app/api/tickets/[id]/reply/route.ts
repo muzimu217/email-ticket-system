@@ -56,7 +56,7 @@ export async function POST(
     .insert({
       ticket_id: id,
       direction: 'outbound',
-      from_email: process.env.SUPPORT_EMAIL || 'openopensource-club@kcos.club',
+      from_email: process.env.SUPPORT_EMAIL || 'opensource-club@kcos.club',
       to_email: ticket.from_email,
       subject: `Re: ${ticket.subject}`,
       content,

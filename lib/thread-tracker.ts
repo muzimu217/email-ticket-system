@@ -1,7 +1,7 @@
 // lib/thread-tracker.ts
 import { nanoid } from 'nanoid';
 
-const SUPPORT_EMAIL_LOCAL = 'openopensource-club';
+const SUPPORT_EMAIL_LOCAL = 'opensource-club';
 const SUPPORT_EMAIL_DOMAIN = 'kcos.club';
 const TOKEN_PREFIX = 'tk-';
 
@@ -14,7 +14,7 @@ export function generateTicketToken(): string {
 
 /**
  * 构建带 ticket token 的 Reply-To 地址
- * 例如: openopensource-club+tk-abc123def456@kcos.club
+ * 例如: opensource-club+tk-abc123def456@kcos.club
  */
 export function buildReplyToAddress(ticketToken: string): string {
   return `${SUPPORT_EMAIL_LOCAL}+${ticketToken}@${SUPPORT_EMAIL_DOMAIN}`;
@@ -22,7 +22,7 @@ export function buildReplyToAddress(ticketToken: string): string {
 
 /**
  * 从 toAddress 中解析 ticket token
- * 输入: "openopensource-club+tk-abc123def456@kcos.club"
+ * 输入: "opensource-club+tk-abc123def456@kcos.club"
  * 输出: "tk-abc123def456" 或 null
  */
 export function parseTicketToken(toAddress: string): string | null {
