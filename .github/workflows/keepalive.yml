@@ -29,7 +29,9 @@ jobs:
       - name: 配置 Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          # 需 >= 22：Node 22+ 自带原生 WebSocket，
+          # @supabase/supabase-js 在 Node <22 会因缺 ws 而初始化失败
+          node-version: "22"
 
       - name: 安装依赖（仅保活所需）
         run: npm install --no-save @supabase/supabase-js
