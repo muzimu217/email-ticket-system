@@ -14,18 +14,23 @@ import { fileURLToPath } from 'url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 function loadEnv() {
+  // 优先使用真实环境变量（GitHub Actions 等 CI 通过 secrets 注入），
+  // 缺省时再回退读取本地 .env.local（本地手动运行时）。
+  const env = { ...process.env };
   try {
     const envPath = resolve(__dirname, '..', '.env.local');
     const content = readFileSync(envPath, 'utf-8');
-    const env = {};
     for (const line of content.split('\n')) {
       const m = line.match(/^([A-Z_]+)="?(.*)"?$/);
-      if (m) env[m[1]] = m[2].replace(/^"|"$/g, '');
+      if (m) {
+        const key = m[1];
+        if (env[key] === undefined) env[key] = m[2].replace(/^"|"$/g, '');
+      }
     }
-    return env;
   } catch {
-    return {};
+    // 无 .env.local 时（如 CI）忽略
   }
+  return env;
 }
 
 const env = loadEnv();

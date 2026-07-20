@@ -1,0 +1,42 @@
+name: Supabase 保活 (Keepalive)
+
+# 防止 Supabase 免费版项目因长时间无访问被自动暂停。
+# 每天自动运行 scripts/keepalive.mjs，对数据库做一次只读查询，
+# 保持项目活跃。需先在仓库 Secrets 中配置以下三项：
+#   SUPABASE_URL              = NEXT_PUBLIC_SUPABASE_URL 的值
+#   SUPABASE_ANON_KEY        = NEXT_PUBLIC_SUPABASE_ANON_KEY 的值
+#   SUPABASE_SERVICE_ROLE_KEY = SUPABASE_SERVICE_ROLE_KEY 的值
+# （取值见项目 .env.local）
+
+on:
+  schedule:
+    # 每 12 小时跑一次（UTC 00:00 与 12:00），稳稳卡在 7 天窗口内
+    - cron: "0 0,12 * * *"
+  # 允许在 Actions 页面手动触发，便于首次验证
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout 代码
+        uses: actions/checkout@v4
+
+      - name: 配置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: 安装依赖（仅保活所需）
+        run: npm install --no-save @supabase/supabase-js
+
+      - name: 运行保活脚本
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/keepalive.mjs
